@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Distance Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9f7ef;
+            border: 1px solid #d4edda;
+            color: #155724;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+    <script>
+        const locations = {
+            "loja_inoa": {
+                name: "Loja Inoã",
+                lat: -22.935286,
+                lng: -42.687526
+            },
+            "loja_cordeirinho": {
+                name: "Loja Cordeirinho",
+                lat: -22.977931,
+                lng: -42.839786
+            },
+            "kit_king_marica": {
+                name: "Kit King Maricá",
+                lat: -22.916984,
+                lng: -42.818011
+            }
+        };
+
+        const deliveryPrices = [
+            { maxDistance: 0.5, price: 4.99 },
+            { maxDistance: 1.0, price: 4.99 },
+            { maxDistance: 1.5, price: 5.99 },
+            { maxDistance: 2.0, price: 5.99 },
+            { maxDistance: 2.5, price: 6.99 },
+            { maxDistance: 3.0, price: 6.99 },
+            { maxDistance: 3.5, price: 7.99 },
+            { maxDistance: 4.0, price: 7.99 },
+            { maxDistance: 4.5, price: 8.99 },
+            { maxDistance: 5.0, price: 8.99 },
+            { maxDistance: 5.5, price: 9.99 },
+            { maxDistance: 6.0, price: 10.99 },
+            { maxDistance: 6.5, price: 11.99 },
+            { maxDistance: 7.0, price: 12.99 },
+            { maxDistance: 7.5, price: 13.99 },
+            { maxDistance: 8.0, price: 14.99 },
+            { maxDistance: 8.5, price: 15.99 },
+            { maxDistance: 9.0, price: 16.99 },
+            { maxDistance: 9.5, price: 17.99 },
+            { maxDistance: 10.0, price: 18.99 },
+            { maxDistance: 10.5, price: 20.99 },
+            { maxDistance: 11.0, price: 20.99 },
+            { maxDistance: 11.5, price: 21.99 },
+            { maxDistance: 12.0, price: 22.99 },
+            { maxDistance: 12.5, price: 22.99 },
+            { maxDistance: 13.0, price: 24.99 },
+            { maxDistance: 15.0, price: 24.99 }
+        ];
+
+        async function calculateDistance() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            const transportMode = document.getElementById('transportMode').value;
+            const resultDiv = document.getElementById('result');
+
+            if (isNaN(lat) || isNaN(lng)) {
+                resultDiv.innerHTML = '<div class="error">Por favor, insira uma latitude e longitude válidas.</div>';
+                return;
+            }
+
+            try {
+                const distances = await Promise.all(Object.entries(locations).map(async ([key, location]) => {
+                    const url = `https://router.hereapi.com/v8/routes?transportMode=${transportMode}&origin=${location.lat},${location.lng}&destination=${lat},${lng}&return=summary&apiKey=uYz4XxIPXWKztAxcGJZHFowgtTG8n3ODhWLbYpBMhJw`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.routes && data.routes.length > 0) {
+                        const distance = data.routes[0].sections[0].summary.length / 1000; // Convert meters to km
+                        return {
+                            name: location.name,
+                            distance
+                        };
+                    } else {
+                        throw new Error(`Nenhuma rota encontrada para ${location.name}.`);
+                    }
+                }));
+
+                const closest = distances.reduce((prev, current) => prev.distance < current.distance ? prev : current);
+                const price = deliveryPrices.find(p => closest.distance <= p.maxDistance)?.price || 25.99;
+
+                resultDiv.innerHTML = `<div class="result">O ponto mais próximo é <strong>${closest.name}</strong> com uma distância de <strong>${closest.distance.toFixed(2)} km</strong>.<br>
+                A taxa de entrega é <strong>R$ ${price.toFixed(2)}</strong>${closest.distance > 15 ? ' (Entrega indisponível acima de 15 km)' : ''}.</div>`;
+
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = '<div class="error">Ocorreu um erro ao calcular a distância. Verifique sua chave de API ou tente novamente mais tarde.</div>';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora de Distância de Entrega</h1>
+        <div class="form-group">
+            <label for="latitude">Latitude do Local de Entrega:</label>
+            <input type="text" id="latitude" placeholder="Ex: -22.9161">
+        </div>
+        <div class="form-group">
+            <label for="longitude">Longitude do Local de Entrega:</label>
+            <input type="text" id="longitude" placeholder="Ex: -42.8183">
+        </div>
+        <div class="form-group">
+            <label for="transportMode">Modo de Transporte:</label>
+            <select id="transportMode">
+                <option value="car">Carro</option>
+                <option value="scooter">Moto</option>
+            </select>
+        </div>
+        <button onclick="calculateDistance()">Calcular</button>
+        <div id="result"></div>
+    </div>
+</body>
+</html>
