@@ -140,7 +140,7 @@
                 }));
 
                 const closest = distances.reduce((prev, current) => prev.distance < current.distance ? prev : current);
-                const price = deliveryPrices.find(p => closest.distance <= p.maxDistance)?.price || 25.99;
+                const price = deliveryPrices.find(p => closest.distance <= p.maxDistance)?.price || 29.99;
 
                 resultDiv.innerHTML = `<div class="result">O ponto mais próximo é <strong>${closest.name}</strong> com uma distância de <strong>${closest.distance.toFixed(2)} km</strong>.<br>
                 A taxa de entrega é <strong>R$ ${price.toFixed(2)}</strong>${closest.distance > 15 ? ' (Entrega indisponível acima de 15 km)' : ''}.</div>`;
